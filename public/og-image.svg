@@ -12,6 +12,6 @@
   <rect width="1200" height="630" fill="url(#bg)"/>
   <circle cx="260" cy="180" r="120" fill="url(#accent)" opacity="0.4"/>
   <circle cx="980" cy="500" r="160" fill="url(#accent)" opacity="0.3"/>
-  <text x="100" y="280" fill="#F8FAFC" font-size="64" font-family="Inter, sans-serif" font-weight="600">Brian Logo Gallery</text>
+  <text x="100" y="280" fill="#F8FAFC" font-size="64" font-family="Inter, sans-serif" font-weight="600">palette-planet.com</text>
   <text x="100" y="360" fill="#CBD5F5" font-size="32" font-family="Inter, sans-serif">Premium brand identity directory</text>
 </svg>

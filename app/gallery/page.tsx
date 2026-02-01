@@ -3,10 +3,10 @@ import { Metadata } from "next";
 import BrandGrid from "@/components/BrandGrid";
 import SearchBar from "@/components/SearchBar";
 import SeoJsonLd from "@/components/SeoJsonLd";
-import { brands, categories } from "@/lib/data";
+import { Brand, getBrands, categories } from "@/lib/data";
 import { DEFAULT_DESCRIPTION, absoluteUrl, truncate } from "@/lib/seo";
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 30;
 
 const sortOptions = [
   { value: "popular", label: "Popular" },
@@ -28,11 +28,13 @@ const buildQueryString = (params: Record<string, string | undefined>) => {
 const normalize = (value: string) => value.toLowerCase();
 
 const filterBrands = ({
+  brands,
   query,
   category,
   tag,
   sort,
 }: {
+  brands: Brand[];
   query: string;
   category?: string;
   tag?: string;
@@ -86,18 +88,21 @@ export const metadata: Metadata = {
   },
 };
 
+export const dynamic = "force-dynamic";
+
 export default function GalleryPage({
   searchParams,
 }: {
   searchParams: Record<string, string | string[] | undefined>;
 }) {
+  const brands = getBrands();
   const query = typeof searchParams.q === "string" ? searchParams.q : "";
   const category = typeof searchParams.category === "string" ? searchParams.category : undefined;
   const tag = typeof searchParams.tag === "string" ? searchParams.tag : undefined;
   const sort = typeof searchParams.sort === "string" ? searchParams.sort : "popular";
   const page = typeof searchParams.page === "string" ? Number(searchParams.page) : 1;
 
-  const filtered = filterBrands({ query, category, tag, sort });
+  const filtered = filterBrands({ brands, query, category, tag, sort });
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(Math.max(page, 1), totalPages);
   const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);

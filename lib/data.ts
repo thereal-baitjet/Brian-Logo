@@ -56,7 +56,7 @@ export const categories: Category[] = [
   },
 ];
 
-export const brands: Brand[] = [
+const baseBrands: Brand[] = [
   {
     id: "brd-001",
     name: "Aurora Stack",
@@ -251,10 +251,32 @@ export const brands: Brand[] = [
   },
 ];
 
-export const featuredBrands = brands.filter((brand) => brand.featured);
+const readAdminBrands = (): Brand[] => {
+  if (typeof process === "undefined") {
+    return [];
+  }
+
+  try {
+    const fs = require("fs") as typeof import("fs");
+    const path = require("path") as typeof import("path");
+    const filePath = path.join(process.cwd(), "data", "admin-brands.json");
+    if (!fs.existsSync(filePath)) {
+      return [];
+    }
+    const raw = fs.readFileSync(filePath, "utf8");
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as Brand[]) : [];
+  } catch {
+    return [];
+  }
+};
+
+export const getBrands = () => [...baseBrands, ...readAdminBrands()];
+
+export const getFeaturedBrands = () => getBrands().filter((brand) => brand.featured);
 
 export const getCategoryBySlug = (slug: string) =>
   categories.find((category) => category.slug === slug);
 
 export const getBrandBySlug = (slug: string) =>
-  brands.find((brand) => brand.slug === slug);
+  getBrands().find((brand) => brand.slug === slug);

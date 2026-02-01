@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import SearchBar from "@/components/SearchBar";
 import BrandGrid from "@/components/BrandGrid";
-import { categories, featuredBrands } from "@/lib/data";
+import { categories, getFeaturedBrands } from "@/lib/data";
 import { absoluteUrl } from "@/lib/seo";
 
 export const metadata = {
@@ -11,7 +11,10 @@ export const metadata = {
   },
 };
 
+export const dynamic = "force-dynamic";
+
 export default function HomePage() {
+  const featuredBrands = getFeaturedBrands();
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-16 px-6 py-16">
       <section className="glass rounded-3xl p-10 md:p-14">

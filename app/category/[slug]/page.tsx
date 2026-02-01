@@ -3,13 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import BrandGrid from "@/components/BrandGrid";
 import SeoJsonLd from "@/components/SeoJsonLd";
-import { brands, categories, getCategoryBySlug } from "@/lib/data";
+import { getBrands, categories, getCategoryBySlug } from "@/lib/data";
 import { absoluteUrl, truncate } from "@/lib/seo";
 
-export const dynamicParams = false;
-
-export const generateStaticParams = async () =>
-  categories.map((category) => ({ slug: category.slug }));
+export const dynamic = "force-dynamic";
 
 export const generateMetadata = async ({
   params,
@@ -49,7 +46,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
     notFound();
   }
 
-  const filtered = brands.filter((brand) => brand.categorySlug === category.slug);
+  const filtered = getBrands().filter((brand) => brand.categorySlug === category.slug);
 
   const itemList = {
     "@context": "https://schema.org",

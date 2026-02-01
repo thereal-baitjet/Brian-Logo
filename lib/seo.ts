@@ -1,5 +1,5 @@
-export const SITE_URL = "https://brandgallery.local";
-export const DEFAULT_TITLE = "Brian Logo Gallery — Premium Brand Directory";
+export const SITE_URL = "https://palette-planet.com";
+export const DEFAULT_TITLE = "palette-planet.com — Premium Brand Directory";
 export const DEFAULT_DESCRIPTION =
   "Discover a curated gallery of premium brand logos across tech, lifestyle, wellness, and hospitality. Browse, search, and explore high-end identity systems.";
 

@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
-import { brands, categories } from "@/lib/data";
+import { getBrands, categories } from "@/lib/data";
 import { SITE_URL } from "@/lib/seo";
+
+export const dynamic = "force-dynamic";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -22,8 +24,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${SITE_URL}/category/${category.slug}`,
       lastModified: now,
     })),
-    ...brands.map((brand) => ({
+    ...getBrands().map((brand) => ({
       url: `${SITE_URL}/brand/${brand.slug}`,
+      lastModified: now,
+    })),
+    ...getBrands().map((brand) => ({
+      url: `${SITE_URL}/logo/${brand.slug}`,
       lastModified: now,
     })),
   ];

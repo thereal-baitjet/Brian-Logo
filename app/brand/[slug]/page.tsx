@@ -4,13 +4,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import BrandGrid from "@/components/BrandGrid";
 import SeoJsonLd from "@/components/SeoJsonLd";
-import { brands, categories, getBrandBySlug, getCategoryBySlug } from "@/lib/data";
+import { getBrands, categories, getBrandBySlug, getCategoryBySlug } from "@/lib/data";
 import { absoluteUrl, truncate } from "@/lib/seo";
 
-export const dynamicParams = false;
-
-export const generateStaticParams = async () =>
-  brands.map((brand) => ({ slug: brand.slug }));
+export const dynamic = "force-dynamic";
 
 export const generateMetadata = async ({
   params,
@@ -61,7 +58,7 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
   }
 
   const category = getCategoryBySlug(brand.categorySlug);
-  const related = brands
+  const related = getBrands()
     .filter(
       (item) =>
         item.slug !== brand.slug &&
@@ -83,14 +80,24 @@ export default function BrandPage({ params }: { params: { slug: string } }) {
     <div className="mx-auto flex max-w-6xl flex-col gap-12 px-6 py-16">
       <SeoJsonLd data={organization} id={`brand-${brand.slug}-org`} />
       <section className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="glass rounded-3xl p-8">
-          <Image
-            src={brand.logoUrl}
-            alt={`${brand.name} logo`}
-            width={520}
-            height={320}
-            className="h-32 w-full object-contain"
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-10">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-70 blur-3xl"
+            style={{
+              background: `radial-gradient(circle at top, ${
+                brand.dominantColors[0] ?? "rgba(99,102,241,0.35)"
+              } 0%, transparent 70%)`,
+            }}
           />
+          <Link href={`/logo/${brand.slug}`} className="relative z-10 block focus-ring">
+            <Image
+              src={brand.logoUrl}
+              alt={`${brand.name} logo`}
+              width={520}
+              height={320}
+              className="h-44 w-full object-contain drop-shadow-[0_28px_50px_rgba(15,23,42,0.6)] transition hover:scale-[1.02] md:h-56"
+            />
+          </Link>
         </div>
         <div className="space-y-6">
           <div>
