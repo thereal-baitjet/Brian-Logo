@@ -17,6 +17,7 @@ export type StoredBrand = {
   categorySlug: string;
   tags: string[];
   logoUrl: string;
+  cloudinaryPublicId?: string;
   dominantColors: string[];
   country: string;
   website?: string;
