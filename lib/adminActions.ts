@@ -3,6 +3,7 @@
 import fs from "fs";
 import path from "path";
 import { redirect } from "next/navigation";
+import cloudinary from "cloudinary";
 import {
   canSignUp,
   clearAdminSession,
@@ -49,6 +50,21 @@ export const signupAdmin = async (_prev: ActionState, formData: FormData): Promi
   setAdminSession(email.trim().toLowerCase());
   redirect("/admin/upload");
 };
+
+const useCloudinary = !!(
+  process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_API_KEY &&
+  process.env.CLOUDINARY_API_SECRET
+);
+
+if (useCloudinary) {
+  cloudinary.v2.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true,
+  });
+}
 
 export const signinAdmin = async (_prev: ActionState, formData: FormData): Promise<ActionState> => {
   const email = String(formData.get("email") ?? "");
@@ -114,11 +130,39 @@ export const createLogo = async (_prev: ActionState, formData: FormData): Promis
     return { error: "Logo must be PNG, JPG, WEBP, or SVG." };
   }
 
-  ensureUploadDir();
-  const filename = `${slug}.${ext}`;
-  const filePath = path.join(uploadDir, filename);
+  let logoUrl = "";
+  let cloudinaryPublicId: string | undefined = undefined;
   const buffer = Buffer.from(await file.arrayBuffer());
-  fs.writeFileSync(filePath, buffer);
+
+  if (useCloudinary) {
+    try {
+      const upload = await new Promise<any>((res, rej) => {
+        const stream = cloudinary.v2.uploader.upload_stream(
+          {
+            folder: "brian-logos",
+            public_id: slug,
+            overwrite: true,
+            resource_type: "image",
+          },
+          (error, result) => {
+            if (error) return rej(error);
+            res(result);
+          }
+        );
+        stream.end(buffer);
+      });
+      logoUrl = upload.secure_url;
+      cloudinaryPublicId = upload.public_id;
+    } catch (err) {
+      return { error: "Cloudinary upload failed." };
+    }
+  } else {
+    ensureUploadDir();
+    const filename = `${slug}.${ext}`;
+    const filePath = path.join(uploadDir, filename);
+    fs.writeFileSync(filePath, buffer);
+    logoUrl = `/uploads/logos/${filename}`;
+  }
 
   const tags = tagsRaw
     ? Array.from(new Set(tagsRaw.split(",").map((tag) => tag.trim()).filter(Boolean)))
@@ -138,7 +182,8 @@ export const createLogo = async (_prev: ActionState, formData: FormData): Promis
     description: description || `${name} logo`,
     categorySlug,
     tags,
-    logoUrl: `/uploads/logos/${filename}`,
+    logoUrl,
+    cloudinaryPublicId,
     dominantColors,
     country,
     website: website || undefined,
@@ -194,6 +239,7 @@ export const updateLogo = async (_prev: ActionState, formData: FormData): Promis
   }
 
   let logoUrl = existing.logoUrl;
+  let cloudinaryPublicId = (existing as any).cloudinaryPublicId as string | undefined;
   const allowedTypes: Record<string, string> = {
     "image/png": "png",
     "image/jpeg": "jpg",
@@ -211,12 +257,42 @@ export const updateLogo = async (_prev: ActionState, formData: FormData): Promis
     if (!ext) {
       return { error: "Logo must be PNG, JPG, WEBP, or SVG." };
     }
-    ensureUploadDir();
-    const filename = `${slug}.${ext}`;
-    const filePath = path.join(uploadDir, filename);
     const buffer = Buffer.from(await file.arrayBuffer());
-    fs.writeFileSync(filePath, buffer);
-    logoUrl = `/uploads/logos/${filename}`;
+    if (useCloudinary) {
+      try {
+        // remove existing cloudinary image if present
+        if (cloudinaryPublicId) {
+          try {
+            await cloudinary.v2.uploader.destroy(cloudinaryPublicId, { resource_type: "image" });
+          } catch {}
+        }
+        const upload = await new Promise<any>((res, rej) => {
+          const stream = cloudinary.v2.uploader.upload_stream(
+            {
+              folder: "brian-logos",
+              public_id: slug,
+              overwrite: true,
+              resource_type: "image",
+            },
+            (error, result) => {
+              if (error) return rej(error);
+              res(result);
+            }
+          );
+          stream.end(buffer);
+        });
+        logoUrl = upload.secure_url;
+        cloudinaryPublicId = upload.public_id;
+      } catch (err) {
+        return { error: "Cloudinary upload failed." };
+      }
+    } else {
+      ensureUploadDir();
+      const filename = `${slug}.${ext}`;
+      const filePath = path.join(uploadDir, filename);
+      fs.writeFileSync(filePath, buffer);
+      logoUrl = `/uploads/logos/${filename}`;
+    }
   } else if (slug !== existing.slug && existing.logoUrl.startsWith("/uploads/logos/")) {
     const existingExt = existing.logoUrl.split(".").pop() ?? "png";
     const newFilename = `${slug}.${existingExt}`;
@@ -227,6 +303,13 @@ export const updateLogo = async (_prev: ActionState, formData: FormData): Promis
       fs.renameSync(oldPath, newPath);
       logoUrl = `/uploads/logos/${newFilename}`;
     }
+  } else if (slug !== existing.slug && useCloudinary && cloudinaryPublicId) {
+    try {
+      const newPublicId = `brian-logos/${slug}`;
+      const result = await cloudinary.v2.uploader.rename(cloudinaryPublicId, newPublicId, { overwrite: true });
+      cloudinaryPublicId = result.public_id ?? newPublicId;
+      logoUrl = result.secure_url ?? logoUrl;
+    } catch {}
   }
 
   const tags = tagsRaw
@@ -248,6 +331,7 @@ export const updateLogo = async (_prev: ActionState, formData: FormData): Promis
     categorySlug,
     tags,
     logoUrl,
+    cloudinaryPublicId,
     dominantColors,
     country,
     website: website || undefined,
@@ -283,6 +367,10 @@ export const deleteLogo = async (formData: FormData) => {
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
+  } else if ((target as any).cloudinaryPublicId) {
+    try {
+      await cloudinary.v2.uploader.destroy((target as any).cloudinaryPublicId, { resource_type: "image" });
+    } catch {}
   }
 
   redirect("/admin/logos");
